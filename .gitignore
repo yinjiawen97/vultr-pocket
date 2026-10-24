@@ -1,0 +1,25 @@
+# 私密：签名密钥、Cloudflare 口令 / 订阅地址 / 备份、本机 Worker 配置
+signing/
+cloudflare/.private/
+cloudflare/.wrangler/
+cloudflare/wrangler.jsonc
+.wrangler/
+*.jks
+*.keystore
+*.enc
+*.key
+
+# 构建产物与第三方二进制（mihomo 用 tools/fetch-mihomo.sh 下载）
+build/
+dist/
+lib/
+*.apk
+
+# 本地备份与测试产物
+backup-*.zip
+qa/screens/
+qa/*.json
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store

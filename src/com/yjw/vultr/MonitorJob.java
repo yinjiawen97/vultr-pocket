@@ -1,0 +1,14 @@
+package com.yjw.vultr;
+import android.app.*;
+import android.app.job.*;
+import android.content.*;
+import android.os.Build;
+import org.json.*;
+public class MonitorJob extends JobService {
+ volatile boolean stop;
+ static void schedule(Context c,boolean enable){JobScheduler scheduler=(JobScheduler)c.getSystemService(JOB_SCHEDULER_SERVICE);if(!enable){scheduler.cancel(201);return;}scheduler.schedule(new JobInfo.Builder(201,new ComponentName(c,MonitorJob.class)).setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY).setPeriodic(30*60*1000L).build());}
+ public boolean onStartJob(JobParameters params){stop=false;Manager.IO.execute(()->{try{Manager m=Manager.get(this);if(!stop&&CloudPublisher.config(m)!=null){CloudMonitor.check(m,"background");JSONObject cloud=CloudMonitor.snapshot(m);if(cloud.optInt("failures")>=2&&!cloud.optBoolean("notified")){notifyCloudIssue();cloud.put("notified",true);m.save();}}Book b=new Book(m);b.sync();JSONArray all=b.all();for(int i=0;i<all.length()&&!stop;i++){JSONObject f=all.getJSONObject(i);if(f.optBoolean("hidden"))continue;b.check(f,false);String status=f.optString("status");if((status.contains("删除")||status.contains("连续失败"))&&!status.equals(f.optString("notified"))){notifyIssue();f.put("notified",status);m.save();}if(status.equals("订阅可下载"))f.remove("notified");}m.save();}catch(Exception ignored){}finally{jobFinished(params,false);}});return true;}
+ void notifyIssue(){NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);nm.createNotificationChannel(new NotificationChannel("subscription-issues","订阅异常提醒",NotificationManager.IMPORTANCE_DEFAULT));Intent intent=new Intent(this,MainActivity.class).putExtra("subscriptions",true);PendingIntent p=PendingIntent.getActivity(this,101,intent,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);try{nm.notify(201,new Notification.Builder(this,"subscription-issues").setSmallIcon(getApplicationInfo().icon).setContentTitle("订阅需要检查").setContentText("检测到实例已删除或订阅连续失败，点击查看详情。").setContentIntent(p).setAutoCancel(true).build());}catch(SecurityException ignored){}}
+ void notifyCloudIssue(){NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);nm.createNotificationChannel(new NotificationChannel("subscription-issues","订阅异常提醒",NotificationManager.IMPORTANCE_DEFAULT));PendingIntent p=PendingIntent.getActivity(this,102,new Intent(this,MainActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);try{nm.notify(202,new Notification.Builder(this,"subscription-issues").setSmallIcon(getApplicationInfo().icon).setContentTitle("固定订阅需要检查").setContentText("Cloudflare 固定入口连续两次检测未通过，请检查本机网络、权限和订阅状态。").setContentIntent(p).setAutoCancel(true).build());}catch(SecurityException ignored){}}
+ public boolean onStopJob(JobParameters p){stop=true;return true;}
+}

@@ -1,0 +1,134 @@
+"mixed-port": 7890
+"allow-lan": false
+"mode": "rule"
+"log-level": "info"
+"ipv6": false
+"unified-delay": true
+"tcp-concurrent": true
+"dns":
+  "enable": true
+  "ipv6": false
+  "enhanced-mode": "fake-ip"
+  "fake-ip-range": "198.18.0.1/16"
+  "fake-ip-filter":
+    - "*.lan"
+    - "*.local"
+  "default-nameserver":
+    - "223.5.5.5"
+    - "119.29.29.29"
+  "nameserver":
+    - "https://dns.alidns.com/dns-query"
+    - "https://doh.pub/dns-query"
+  "fallback":
+    - "https://1.1.1.1/dns-query"
+    - "https://8.8.8.8/dns-query"
+  "fallback-filter":
+    "geoip": true
+    "geoip-code": "CN"
+"proxies":
+  -
+    "name": "Vultr-Proxy"
+    "type": "ss"
+    "server": "REPLACE_SERVER_IP"
+    "port": 8388
+    "cipher": "chacha20-ietf-poly1305"
+    "password": "REPLACE_PASSWORD"
+    "udp": true
+"proxy-groups":
+  -
+    "name": "PROXY"
+    "type": "select"
+    "proxies":
+      - "Vultr-Proxy"
+      - "DIRECT"
+  -
+    "name": "AI"
+    "type": "select"
+    "proxies":
+      - "Vultr-Proxy"
+      - "DIRECT"
+  -
+    "name": "DEV"
+    "type": "select"
+    "proxies":
+      - "Vultr-Proxy"
+      - "DIRECT"
+  -
+    "name": "Google"
+    "type": "select"
+    "proxies":
+      - "Vultr-Proxy"
+      - "DIRECT"
+  -
+    "name": "YouTube"
+    "type": "select"
+    "proxies":
+      - "Vultr-Proxy"
+      - "DIRECT"
+  -
+    "name": "Microsoft"
+    "type": "select"
+    "proxies":
+      - "Vultr-Proxy"
+      - "DIRECT"
+  -
+    "name": "Apple"
+    "type": "select"
+    "proxies":
+      - "DIRECT"
+      - "Vultr-Proxy"
+"rules":
+  - "DOMAIN-SUFFIX,local,DIRECT"
+  - "DOMAIN,localhost,DIRECT"
+  - "IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
+  - "IP-CIDR,10.0.0.0/8,DIRECT,no-resolve"
+  - "IP-CIDR,172.16.0.0/12,DIRECT,no-resolve"
+  - "IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
+  - "IP-CIDR,169.254.0.0/16,DIRECT,no-resolve"
+  - "DOMAIN-SUFFIX,openai.com,AI"
+  - "DOMAIN-SUFFIX,chatgpt.com,AI"
+  - "DOMAIN-SUFFIX,oaistatic.com,AI"
+  - "DOMAIN-SUFFIX,oaiusercontent.com,AI"
+  - "DOMAIN-SUFFIX,chat.com,AI"
+  - "DOMAIN-SUFFIX,claude.ai,AI"
+  - "DOMAIN-SUFFIX,claude.com,AI"
+  - "DOMAIN-SUFFIX,anthropic.com,AI"
+  - "DOMAIN-SUFFIX,cursor.com,DEV"
+  - "DOMAIN-SUFFIX,cursor.sh,DEV"
+  - "DOMAIN-SUFFIX,cursorapi.com,DEV"
+  - "DOMAIN-SUFFIX,github.com,DEV"
+  - "DOMAIN-SUFFIX,githubusercontent.com,DEV"
+  - "DOMAIN-SUFFIX,githubassets.com,DEV"
+  - "DOMAIN-SUFFIX,github.io,DEV"
+  - "DOMAIN-SUFFIX,githubcopilot.com,DEV"
+  - "DOMAIN-SUFFIX,ghcr.io,DEV"
+  - "DOMAIN-SUFFIX,youtube.com,YouTube"
+  - "DOMAIN-SUFFIX,youtu.be,YouTube"
+  - "DOMAIN-SUFFIX,youtube-nocookie.com,YouTube"
+  - "DOMAIN-SUFFIX,googlevideo.com,YouTube"
+  - "DOMAIN-SUFFIX,ytimg.com,YouTube"
+  - "DOMAIN-SUFFIX,ggpht.com,YouTube"
+  - "DOMAIN-SUFFIX,google.com,Google"
+  - "DOMAIN-SUFFIX,googleapis.com,Google"
+  - "DOMAIN-SUFFIX,gstatic.com,Google"
+  - "DOMAIN-SUFFIX,googleusercontent.com,Google"
+  - "DOMAIN-SUFFIX,google.com.hk,Google"
+  - "DOMAIN-SUFFIX,google.co.jp,Google"
+  - "DOMAIN-SUFFIX,microsoft.com,Microsoft"
+  - "DOMAIN-SUFFIX,microsoftonline.com,Microsoft"
+  - "DOMAIN-SUFFIX,live.com,Microsoft"
+  - "DOMAIN-SUFFIX,office.com,Microsoft"
+  - "DOMAIN-SUFFIX,office.net,Microsoft"
+  - "DOMAIN-SUFFIX,outlook.com,Microsoft"
+  - "DOMAIN-SUFFIX,bing.com,Microsoft"
+  - "DOMAIN-SUFFIX,windows.net,Microsoft"
+  - "DOMAIN-SUFFIX,onedrive.com,Microsoft"
+  - "DOMAIN-SUFFIX,msauth.net,Microsoft"
+  - "DOMAIN-SUFFIX,msftauth.net,Microsoft"
+  - "DOMAIN-SUFFIX,apple.com,Apple"
+  - "DOMAIN-SUFFIX,icloud.com,Apple"
+  - "DOMAIN-SUFFIX,icloud-content.com,Apple"
+  - "DOMAIN-SUFFIX,mzstatic.com,Apple"
+  - "GEOSITE,CN,DIRECT"
+  - "GEOIP,CN,DIRECT"
+  - "MATCH,PROXY"

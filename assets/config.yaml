@@ -1,0 +1,347 @@
+{
+  "mixed-port": 7890,
+  "allow-lan": false,
+  "mode": "rule",
+  "log-level": "info",
+  "ipv6": false,
+  "unified-delay": true,
+  "tcp-concurrent": true,
+  "x-vultr-routing-version": 2,
+  "dns": {
+    "enable": true,
+    "ipv6": false,
+    "enhanced-mode": "fake-ip",
+    "fake-ip-range": "198.18.0.1/16",
+    "fake-ip-filter": [
+      "*.lan",
+      "*.local",
+      "localhost",
+      "+.ts.net"
+    ],
+    "respect-rules": true,
+    "default-nameserver": [
+      "223.5.5.5",
+      "119.29.29.29"
+    ],
+    "proxy-server-nameserver": [
+      "https://dns.alidns.com/dns-query#DIRECT",
+      "https://doh.pub/dns-query#DIRECT"
+    ],
+    "direct-nameserver": [
+      "https://dns.alidns.com/dns-query#DIRECT",
+      "https://doh.pub/dns-query#DIRECT"
+    ],
+    "nameserver": [
+      "https://1.1.1.1/dns-query#PROXY",
+      "https://8.8.8.8/dns-query#PROXY"
+    ],
+    "nameserver-policy": {
+      "+.lan": "system",
+      "+.local": "system",
+      "localhost": "system",
+      "rule-set:openai": [
+        "https://1.1.1.1/dns-query#PROXY",
+        "https://8.8.8.8/dns-query#PROXY"
+      ],
+      "rule-set:anthropic": [
+        "https://1.1.1.1/dns-query#PROXY",
+        "https://8.8.8.8/dns-query#PROXY"
+      ],
+      "rule-set:github": [
+        "https://1.1.1.1/dns-query#PROXY",
+        "https://8.8.8.8/dns-query#PROXY"
+      ],
+      "rule-set:github-copilot": [
+        "https://1.1.1.1/dns-query#PROXY",
+        "https://8.8.8.8/dns-query#PROXY"
+      ],
+      "rule-set:cursor": [
+        "https://1.1.1.1/dns-query#PROXY",
+        "https://8.8.8.8/dns-query#PROXY"
+      ],
+      "rule-set:youtube": [
+        "https://1.1.1.1/dns-query#PROXY",
+        "https://8.8.8.8/dns-query#PROXY"
+      ],
+      "rule-set:google": [
+        "https://1.1.1.1/dns-query#PROXY",
+        "https://8.8.8.8/dns-query#PROXY"
+      ],
+      "rule-set:private": [
+        "https://dns.alidns.com/dns-query#DIRECT",
+        "https://doh.pub/dns-query#DIRECT"
+      ],
+      "rule-set:apple-cn": [
+        "https://dns.alidns.com/dns-query#DIRECT",
+        "https://doh.pub/dns-query#DIRECT"
+      ],
+      "rule-set:microsoft@cn": [
+        "https://dns.alidns.com/dns-query#DIRECT",
+        "https://doh.pub/dns-query#DIRECT"
+      ],
+      "rule-set:cn": [
+        "https://dns.alidns.com/dns-query#DIRECT",
+        "https://doh.pub/dns-query#DIRECT"
+      ],
+      "+.apple.com.cn": [
+        "https://dns.alidns.com/dns-query#DIRECT",
+        "https://doh.pub/dns-query#DIRECT"
+      ],
+      "+.microsoft.com.cn": [
+        "https://dns.alidns.com/dns-query#DIRECT",
+        "https://doh.pub/dns-query#DIRECT"
+      ],
+      "+.ts.net": "system"
+    }
+  },
+  "proxies": [
+    {
+      "name": "Vultr-Proxy",
+      "type": "ss",
+      "server": "REPLACE_SERVER_IP",
+      "port": 8388,
+      "cipher": "chacha20-ietf-poly1305",
+      "password": "REPLACE_PASSWORD",
+      "udp": true
+    }
+  ],
+  "proxy-groups": [
+    {
+      "name": "PROXY",
+      "type": "select",
+      "proxies": [
+        "Vultr-Proxy",
+        "DIRECT"
+      ]
+    },
+    {
+      "name": "AI",
+      "type": "select",
+      "proxies": [
+        "Vultr-Proxy",
+        "DIRECT"
+      ]
+    },
+    {
+      "name": "DEV",
+      "type": "select",
+      "proxies": [
+        "Vultr-Proxy",
+        "DIRECT"
+      ]
+    },
+    {
+      "name": "Google",
+      "type": "select",
+      "proxies": [
+        "Vultr-Proxy",
+        "DIRECT"
+      ]
+    },
+    {
+      "name": "YouTube",
+      "type": "select",
+      "proxies": [
+        "Vultr-Proxy",
+        "DIRECT"
+      ]
+    },
+    {
+      "name": "Microsoft",
+      "type": "select",
+      "proxies": [
+        "Vultr-Proxy",
+        "DIRECT"
+      ]
+    },
+    {
+      "name": "Apple",
+      "type": "select",
+      "proxies": [
+        "DIRECT",
+        "Vultr-Proxy"
+      ]
+    },
+    {
+      "name": "Claude",
+      "type": "select",
+      "proxies": [
+        "Vultr-Proxy"
+      ]
+    }
+  ],
+  "rule-providers": {
+    "private": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/private.mrs",
+      "path": "./ruleset/v2/private.mrs",
+      "interval": 86400,
+      "proxy": "PROXY"
+    },
+    "openai": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/openai.mrs",
+      "path": "./ruleset/v2/openai.mrs",
+      "interval": 86400,
+      "proxy": "PROXY"
+    },
+    "anthropic": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/anthropic.mrs",
+      "path": "./ruleset/v2/anthropic.mrs",
+      "interval": 86400,
+      "proxy": "PROXY"
+    },
+    "github": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs",
+      "path": "./ruleset/v2/github.mrs",
+      "interval": 86400,
+      "proxy": "PROXY"
+    },
+    "github-copilot": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github-copilot.mrs",
+      "path": "./ruleset/v2/github-copilot.mrs",
+      "interval": 86400,
+      "proxy": "PROXY"
+    },
+    "cursor": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cursor.mrs",
+      "path": "./ruleset/v2/cursor.mrs",
+      "interval": 86400,
+      "proxy": "PROXY"
+    },
+    "youtube": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/youtube.mrs",
+      "path": "./ruleset/v2/youtube.mrs",
+      "interval": 86400,
+      "proxy": "PROXY"
+    },
+    "google": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/google.mrs",
+      "path": "./ruleset/v2/google.mrs",
+      "interval": 86400,
+      "proxy": "PROXY"
+    },
+    "apple-cn": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-cn.mrs",
+      "path": "./ruleset/v2/apple-cn.mrs",
+      "interval": 86400,
+      "proxy": "PROXY"
+    },
+    "microsoft@cn": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft@cn.mrs",
+      "path": "./ruleset/v2/microsoft@cn.mrs",
+      "interval": 86400,
+      "proxy": "PROXY"
+    },
+    "apple": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple.mrs",
+      "path": "./ruleset/v2/apple.mrs",
+      "interval": 86400,
+      "proxy": "PROXY"
+    },
+    "microsoft": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.mrs",
+      "path": "./ruleset/v2/microsoft.mrs",
+      "interval": 86400,
+      "proxy": "PROXY"
+    },
+    "cn": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cn.mrs",
+      "path": "./ruleset/v2/cn.mrs",
+      "interval": 86400,
+      "proxy": "PROXY"
+    },
+    "geolocation-!cn": {
+      "type": "http",
+      "behavior": "domain",
+      "format": "mrs",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/geolocation-!cn.mrs",
+      "path": "./ruleset/v2/geolocation-!cn.mrs",
+      "interval": 86400,
+      "proxy": "PROXY"
+    },
+    "cn-ip": {
+      "type": "http",
+      "behavior": "ipcidr",
+      "format": "mrs",
+      "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cn.mrs",
+      "path": "./ruleset/v2/cn-ip.mrs",
+      "interval": 86400,
+      "proxy": "PROXY"
+    }
+  },
+  "rules": [
+    "DOMAIN-SUFFIX,ts.net,DIRECT",
+    "IP-CIDR,100.64.0.0/10,DIRECT,no-resolve",
+    "DOMAIN-SUFFIX,anthropic.com,Claude",
+    "DOMAIN-SUFFIX,claude.ai,Claude",
+    "DOMAIN-SUFFIX,claude.com,Claude",
+    "DOMAIN-SUFFIX,claudeusercontent.com,Claude",
+    "DOMAIN-SUFFIX,clau.de,Claude",
+    "IP-CIDR,160.79.104.0/23,Claude,no-resolve",
+    "IP-CIDR6,2607:6bc0::/48,Claude,no-resolve",
+    "DOMAIN,localhost,DIRECT",
+    "DOMAIN-SUFFIX,local,DIRECT",
+    "DOMAIN-SUFFIX,lan,DIRECT",
+    "IP-CIDR,127.0.0.0/8,DIRECT,no-resolve",
+    "IP-CIDR,10.0.0.0/8,DIRECT,no-resolve",
+    "IP-CIDR,172.16.0.0/12,DIRECT,no-resolve",
+    "IP-CIDR,192.168.0.0/16,DIRECT,no-resolve",
+    "IP-CIDR,169.254.0.0/16,DIRECT,no-resolve",
+    "RULE-SET,private,DIRECT",
+    "DOMAIN-SUFFIX,apple.com.cn,DIRECT",
+    "DOMAIN-SUFFIX,microsoft.com.cn,DIRECT",
+    "RULE-SET,openai,AI",
+    "RULE-SET,anthropic,Claude",
+    "RULE-SET,github,DEV",
+    "RULE-SET,github-copilot,DEV",
+    "RULE-SET,cursor,DEV",
+    "RULE-SET,youtube,YouTube",
+    "RULE-SET,google,Google",
+    "RULE-SET,apple-cn,DIRECT",
+    "RULE-SET,microsoft@cn,DIRECT",
+    "RULE-SET,apple,Apple",
+    "RULE-SET,microsoft,Microsoft",
+    "RULE-SET,cn,DIRECT",
+    "RULE-SET,geolocation-!cn,PROXY",
+    "RULE-SET,cn-ip,DIRECT",
+    "MATCH,PROXY"
+  ]
+}

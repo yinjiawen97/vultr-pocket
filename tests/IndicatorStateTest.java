@@ -1,0 +1,4 @@
+import com.yjw.vultr.IndicatorState;
+public class IndicatorStateTest {
+ public static void main(String[] args){for(String old:new String[]{null,"","unknown","PULSE","rack-broken"})if(!IndicatorState.style(old).equals("pulse"))throw new AssertionError("legacy defaults changed");if(!IndicatorState.style("rack").equals("rack")||!IndicatorState.label("rack").equals("微型机架"))throw new AssertionError("rack selection");if(!IndicatorState.animate(true,true,true,true,true,true))throw new AssertionError("visible running animation");for(int i=0;i<6;i++){boolean[] x={true,true,true,true,true,true};x[i]=false;if(IndicatorState.animate(x[0],x[1],x[2],x[3],x[4],x[5]))throw new AssertionError("animation ignores stop gate "+i);}if(1000/IndicatorState.FRAME_MS>20)throw new AssertionError("frame rate limit");System.out.println("PASS: style migration and animation gates (power, preference, foreground, visibility, system motion, screen)");}
+}

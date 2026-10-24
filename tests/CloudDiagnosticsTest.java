@@ -1,0 +1,20 @@
+import com.yjw.vultr.CloudDiagnostics;
+import org.json.*;
+import java.net.*;
+import java.io.*;
+import javax.net.ssl.*;
+public class CloudDiagnosticsTest {
+ static void require(boolean x,String message){if(!x)throw new AssertionError(message);}
+ static JSONObject round(boolean failure,long when)throws Exception{JSONArray checks=new JSONArray();for(String stage:new String[]{"health","admin","subscription"})checks.put(CloudDiagnostics.event(stage,"https://example.invalid/sub/PRIVATE_PATH?token=SECRET_QUERY","response",failure?0:200,80,failure?new UnknownHostException("Bearer SECRET_KEY PASSWORD url https://secret.invalid/path"):null));return new JSONObject().put("checked",when).put("network","wifi").put("vpn",true).put("validated",false).put("source","manual").put("elapsed_ms",240).put("checks",checks).put("password","SECRET_EXTRA");}
+ public static void main(String[] args)throws Exception{
+  require(CloudDiagnostics.reason(new UnknownHostException()).equals("dns"),"DNS");require(CloudDiagnostics.reason(new SocketTimeoutException()).equals("timeout"),"timeout");require(CloudDiagnostics.reason(new IOException(new SSLHandshakeException("SECRET"))).equals("tls"),"wrapped TLS");require(CloudDiagnostics.reason(new java.security.cert.CertificateException()).equals("tls"),"certificate");require(CloudDiagnostics.reason(new NoRouteToHostException()).equals("route"),"route");require(CloudDiagnostics.reason(new ConnectException()).equals("connect"),"connection");require(CloudDiagnostics.reason(new SocketException()).equals("socket"),"socket");require(CloudDiagnostics.reason(new IllegalArgumentException("PRIVATE_YAML")).equals("format"),"format");require(CloudDiagnostics.reason(new MalformedURLException()).equals("url"),"invalid URL");require(CloudDiagnostics.reason(new SecurityException()).equals("restricted"),"restriction");
+  require(CloudDiagnostics.event("admin","https://example.invalid/private","response",403,1,new IOException()).optString("reason").equals("http"),"HTTP reason");
+  require(CloudDiagnostics.event("subscription","https://example.invalid/private","format",200,1,new IllegalArgumentException()).optString("reason").equals("format"),"HTTP 200 but invalid body");
+  require(CloudDiagnostics.host("https://example.invalid/sub/PRIVATE_PATH?token=SECRET").equals("example.invalid"),"host must exclude private URL");require(CloudDiagnostics.host("https://user:SECRET@example.invalid").equals("地址无效"),"userinfo must not be logged");
+  JSONObject data=CloudDiagnostics.append(null,round(true,1));for(int i=2;i<=110;i++)data=CloudDiagnostics.append(data,round(false,i));require(data.getJSONArray("rounds").length()==100,"bounded retention");require(data.getJSONArray("rounds").getJSONObject(0).getLong("checked")==11,"oldest dropped");require(data.getJSONObject("last_failure").getLong("checked")==1,"successful runs preserve failure");require(data.getJSONArray("rounds").getJSONObject(99).optBoolean("ok"),"latest successful check");
+  String serialized=data.toString(),text=CloudDiagnostics.report(data);for(String secret:new String[]{"PRIVATE_PATH","SECRET_QUERY","SECRET_KEY","PASSWORD","secret.invalid","SECRET_EXTRA","PRIVATE_YAML"})require(!serialized.contains(secret)&&!text.contains(secret),"secret leaked: "+secret);require(text.contains("DNS")&&text.contains("UTC")&&text.contains("VPN 存在"),"actionable report");require(CloudDiagnostics.report(null).contains("尚无日志"),"old data migration");
+  JSONObject injected=round(false,111);injected.put("network","SECRET_NETWORK").put("source","SECRET_SOURCE");injected.getJSONArray("checks").getJSONObject(0).put("reason","SECRET_MESSAGE").put("stack","SECRET_STACK");String safe=CloudDiagnostics.append(data,injected).toString();require(!safe.contains("SECRET"),"unrecognized fields must be excluded");
+  data=CloudDiagnostics.append(data,round(true,112));require(data.getJSONObject("last_failure").getLong("checked")==112,"new failure replaces old failure");
+  System.out.println("PASS: diagnostic classification, redaction, 100-round retention, last failure, legacy data and export");
+ }
+}
