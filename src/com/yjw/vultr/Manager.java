@@ -20,6 +20,8 @@ final class Manager {
  JSONArray refreshInstances()throws Exception{JSONArray all=api().list("/instances","instances");synchronized(this){syncInstances(all);JSONArray safe=ServerScreen.safe(all,this);data.put("home_snapshot",safe).put("home_checked",System.currentTimeMillis());save();return safe;}}
  JSONArray records()throws Exception{return data.getJSONArray("records");}
  static String id(JSONObject item)throws Exception{return UUID.fromString(item.getString("id")).toString();}
+ // One subscription path for every deployment; seeded from the newest record so existing links keep working.
+ synchronized String subToken()throws Exception{String t=data.optString("sub_token");if(t.matches("[0-9a-f]{32}"))return t;for(int i=records().length()-1;i>=0&&!t.matches("[0-9a-f]{32}");i--)t=records().getJSONObject(i).optString("token");if(!t.matches("[0-9a-f]{32}"))t=hex();data.put("sub_token",t);return t;}
  static String hex(){byte[] bytes=new byte[16];new SecureRandom().nextBytes(bytes);StringBuilder b=new StringBuilder();for(byte x:bytes)b.append(String.format("%02x",x&255));return b.toString();}
  String asset(String name)throws Exception{return Api.read(context.getAssets().open(name),1024*1024);}
  String config(JSONObject record,String ip)throws Exception{String template=asset("config.yaml");String expanded=template.replace("REPLACE_PASSWORD",record.getString("password")).replace("REPLACE_SERVER_IP",ip);return Configs.yaml(Configs.routing(Configs.parse(template),Configs.parse(expanded)));}
@@ -76,7 +78,7 @@ final class Manager {
  JSONObject create(JSONObject confirmed)throws Exception{
   if(existing(true)!=null)throw new IOException("已有结果不确定的请求，请先继续核对。");
   JSONObject fresh=plan(confirmed.getString("region"),confirmed.getString("plan"),confirmed.getString("cap"));if(!fresh.toString().equals(confirmed.toString()))throw new IOException("方案或价格已变化，请重新预览确认。");
-  String tag="vp-"+UUID.randomUUID().toString();JSONObject r=new JSONObject().put("tag",tag).put("label","clash-"+fresh.getString("region")+"-"+System.currentTimeMillis()).put("password",hex()).put("token",hex()).put("phase","create-pending").put("requested_at",now()).put("mode","new");
+  String tag="vp-"+UUID.randomUUID().toString();JSONObject r=new JSONObject().put("tag",tag).put("label","clash-"+fresh.getString("region")+"-"+System.currentTimeMillis()).put("password",hex()).put("token",subToken()).put("phase","create-pending").put("requested_at",now()).put("mode","new");
   String script=bootstrap(r);
   records().put(r);save(); // Durable marker BEFORE the only POST; never replay an uncertain request.
   JSONObject payload=new JSONObject().put("region",fresh.getString("region")).put("plan",fresh.getString("plan")).put("os_id",fresh.getInt("os_id")).put("label",r.getString("label")).put("hostname","clash-node").put("tags",new JSONArray().put(tag)).put("backups","disabled").put("enable_ipv6",false).put("disable_public_ipv4",false).put("activation_email",false).put("ddos_protection",false).put("user_data",script);
@@ -109,7 +111,7 @@ final class Manager {
   if(existing(true)!=null)throw new IOException("有未完成请求，请先继续核对。");
   String target=id(item);JSONObject latest=api().call("GET","/instances/"+target,null).getJSONObject("instance");
   if(!latest.optString("os").equals("Ubuntu 24.04 LTS x64"))throw new IOException("手机版仅支持重装 Ubuntu 24.04 LTS x64 实例。");
-  JSONObject r=new JSONObject().put("id",target).put("label",latest.optString("label")).put("password",hex()).put("token",hex()).put("phase","reinstall-preparing").put("requested_at",now()).put("mode","reinstall");remember(r,latest);String script=bootstrap(r);records().put(r);save();
+  JSONObject r=new JSONObject().put("id",target).put("label",latest.optString("label")).put("password",hex()).put("token",subToken()).put("phase","reinstall-preparing").put("requested_at",now()).put("mode","reinstall");remember(r,latest);String script=bootstrap(r);records().put(r);save();
   api().call("PATCH","/instances/"+target,new JSONObject().put("user_data",script));r.put("phase","reinstall-pending");save();
   api().call("POST","/instances/"+target+"/reinstall",new JSONObject().put("hostname","clash-node"));r.put("phase","created");r.remove("checked_at");ServerLogin.forget(data,target);save();return r;
  }

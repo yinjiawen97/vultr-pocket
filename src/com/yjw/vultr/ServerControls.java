@@ -15,7 +15,7 @@ final class ServerControls {
   subscriptionButtons(a,card,x);
   LoginPanel panel=new LoginPanel(a,id,x);card.addView(panel,new LinearLayout.LayoutParams(-1,-2));panel.restore();a.row(card,"编辑登录信息","",()->edit(a,id,x));a.row(card,"刷新登录信息","",()->load(a,id));
 
-  a.row(card,"刷新电源状态",a.loading("instances")?"更新中…":"",()->a.load("instances",()->refresh(a.manager),()->redraw(a)));if(manage)a.row(card,"详情与更多","",()->new ServerScreen(a).more(x));
+  a.row(card,"刷新电源状态",a.loading("instances")?"更新中…":"",()->a.load("instances",()->refresh(a.manager),()->redraw(a)));if(manage){ServerScreen screen=new ServerScreen(a);a.pair(card,"重装并部署",MainActivity.Tone.SECONDARY,()->screen.reinstall(x),"永久删除",MainActivity.Tone.DANGER,()->screen.delete(x));a.row(card,"查看部署详情","",()->screen.detail(x));}
  }catch(Exception e){card.addView(a.label("实例信息待核对，请刷新后查看电源和登录信息。",12,a.MUTED));}}
  static void subscriptionButtons(MainActivity a,LinearLayout card,JSONObject target){
   JSONObject selected=null;try{JSONObject r=a.manager.managed(target.getString("id"));if(r!=null&&!Core.inactive(r.optString("phase"))&&!r.optString("token").isEmpty()){String ip=target.optString("main_ip",r.optString("ip"));if(ip.matches("[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+"))selected=new JSONObject().put("url","http://"+ip+"/sub/"+r.getString("token")).put("label",r.optString("label","Vultr 服务器")).put("phase",r.optString("phase"));}}catch(Exception ignored){}
