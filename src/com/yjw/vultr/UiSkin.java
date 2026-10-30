@@ -24,6 +24,9 @@ final class UiSkin {
    case 3:canvas.drawRoundRect(5,2,19,22,2,2,p);canvas.drawLine(9,7,15,7,p);canvas.drawLine(9,11,15,11,p);canvas.drawLine(9,15,13,15,p);break;
    case 5:canvas.drawArc(4,4,20,20,-50,285,false,p);path.moveTo(15,3);path.lineTo(20,4);path.lineTo(20,9);canvas.drawPath(path,p);break;
    case 6:path.moveTo(15,4);path.lineTo(7,12);path.lineTo(15,20);canvas.drawPath(path,p);break;
+   case 7:canvas.drawCircle(12,12,9,p);path.moveTo(8,12.5f);path.lineTo(11,15.5f);path.lineTo(16.5f,9.5f);canvas.drawPath(path,p);break;
+   case 8:canvas.drawCircle(12,12,9,p);canvas.drawLine(9,9,15,15,p);canvas.drawLine(15,9,9,15,p);break;
+   case 9:canvas.drawCircle(12,12,9,p);canvas.drawLine(12,11,12,16.5f,p);canvas.drawLine(12,7.6f,12,7.8f,p);break;
    default:canvas.drawCircle(12,12,4,p);for(int i=0;i<8;i++){double angle=i*Math.PI/4;canvas.drawLine(12+(float)Math.cos(angle)*7,12+(float)Math.sin(angle)*7,12+(float)Math.cos(angle)*9,12+(float)Math.sin(angle)*9,p);}canvas.drawCircle(12,12,7,p);
    }canvas.restore();}
   public int getIntrinsicWidth(){return 24;}public int getIntrinsicHeight(){return 24;}

@@ -13,7 +13,7 @@ final class StockScreen {
  void open(){a.enterDetail("库存与方案","服务器",()->loadRegions());}
  void loadRegions(){a.task("读取 Vultr 地区列表…",()->{JSONArray list=m.api().list("/regions","regions");a.ui(()->{regions=list;render();});});}
  Spinner spinner(LinearLayout parent,List<String> labels){Spinner s=new Spinner(a);ArrayAdapter<String> adapter=new ArrayAdapter<>(a,android.R.layout.simple_spinner_item,labels);adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);s.setAdapter(adapter);parent.addView(s,new LinearLayout.LayoutParams(-1,a.dp(54)));return s;}
- CheckBox toggle(LinearLayout parent,String text,boolean value){CheckBox c=new CheckBox(a);c.setText(text);c.setTextColor(a.INK);c.setTextSize(16);c.setMinHeight(a.dp(48));c.setChecked(value);parent.addView(c);return c;}
+ CheckBox toggle(LinearLayout parent,String text,boolean value){CheckBox c=new CheckBox(a);c.setText(text);c.setTextColor(a.INK);c.setTextSize(16);c.setMinHeight(a.dp(48));c.setChecked(value);a.tint(c);parent.addView(c);return c;}
  void render()throws Exception{
   a.body.removeAllViews();LinearLayout c=a.card("选择你的服务器","先查库存，再选套餐。所有查询均免费，不会自动创建。");
   List<String> names=new ArrayList<>();int selected=0;
