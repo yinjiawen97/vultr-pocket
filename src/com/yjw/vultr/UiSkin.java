@@ -2,9 +2,18 @@ package com.yjw.vultr;
 import android.graphics.*;
 import android.graphics.drawable.*;
 import android.content.res.ColorStateList;
+import android.animation.*;
+import android.view.View;
+import android.view.animation.PathInterpolator;
 final class UiSkin {
  static GradientDrawable shape(int fill,int border,int radius){GradientDrawable d=new GradientDrawable();d.setColor(fill);d.setCornerRadius(radius);if(border!=0)d.setStroke(1,border);return d;}
  static RippleDrawable ripple(int fill,int border,int radius,int ink){return new RippleDrawable(ColorStateList.valueOf((ink&0x00ffffff)|0x22000000),shape(fill,border,radius),null);}
+ // Strong ease-out: fast start so a press or a new page answers immediately.
+ static final TimeInterpolator EASE_OUT=new PathInterpolator(0.23f,1f,0.32f,1f);
+ // Press feedback: shrink on touch-down, spring back quicker than it went in. System "remove animations" zeroes the durations.
+ static void press(View v,float scale){StateListAnimator s=new StateListAnimator();s.addState(new int[]{android.R.attr.state_pressed,android.R.attr.state_enabled},scaleTo(v,scale,100));s.addState(new int[0],scaleTo(v,1f,160));v.setStateListAnimator(s);}
+ static Animator scaleTo(View v,float scale,long ms){AnimatorSet set=new AnimatorSet();set.playTogether(ObjectAnimator.ofFloat(v,"scaleX",scale),ObjectAnimator.ofFloat(v,"scaleY",scale));set.setDuration(ms);set.setInterpolator(EASE_OUT);return set;}
+ static void haptic(View v){v.performHapticFeedback(android.os.Build.VERSION.SDK_INT>=30?android.view.HapticFeedbackConstants.CONFIRM:android.view.HapticFeedbackConstants.CONTEXT_CLICK);}
  static String phase(String value){switch(value){case "subscription-ready":return "订阅已就绪";case "created":return "云端已创建";case "create-pending":return "创建结果待核对";case "reinstall-preparing":return "准备重装";case "reinstall-pending":return "重装结果待核对";case "deleted":return "已删除";case "create-rejected":return "创建未通过";default:return value.isEmpty()?"尚未检查":value;}}
  static final class Icon extends Drawable {
   final Paint p=new Paint(3);final int kind,color;Icon(int kind,int color){this.kind=kind;this.color=color;}
