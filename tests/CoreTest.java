@@ -13,6 +13,11 @@ public class CoreTest {
   check(!Core.overlaps("bad","bad"));check(Core.confirm(" CREATE ","create"));check(!Core.confirm("yes","delete"));
   check(Core.uncertain("create-pending"));check(Core.uncertain("reinstall-preparing"));check(!Core.uncertain("created"));
   check(Core.inactive("create-rejected"));check(Core.inactive("deleted"));check(!Core.inactive("subscription-ready"));
+  check(Core.deployable("Ubuntu 24.04 LTS x64"));check(Core.deployable("Ubuntu 26.04 LTS x64"));
+  for(String os:new String[]{null,"","Ubuntu 22.04 LTS x64","Ubuntu 26.10 x64","ubuntu 26.04 lts x64","Debian 11 x64 (bullseye)","Debian 13 x64","Rocky Linux 9 x64"})check(!Core.deployable(os));check(Core.deployable("Debian 12 x64 (bookworm)"));check(Core.deployable("Debian 13 x64 (trixie)"));
+  check(Core.SYSTEMS.length==4);check(Core.system("Debian 13 x64 (trixie)").equals("Debian 13 x64 (trixie)"));check(Core.system("Ubuntu 26.04 LTS x64").equals("Ubuntu 26.04 LTS x64"));for(String s:new String[]{null,"","Ubuntu 22.04 LTS x64"})check(Core.system(s).equals("Ubuntu 24.04 LTS x64"));
+  for(String s:Core.SYSTEMS)check(Core.blocked(s).isEmpty());for(String s:new String[]{null,"","  "})check(Core.blocked(s).contains("尚未获取系统信息"));check(Core.blocked("Rocky Linux 9 x64").startsWith("当前系统 Rocky Linux 9 x64 不支持"));
+  for(int code:new int[]{400,401,403,404,422})check(Core.refused(code));for(int code:new int[]{200,408,429,500,503})check(!Core.refused(code));
   System.out.println("PASS: "+n+" core checks");
  }
 }

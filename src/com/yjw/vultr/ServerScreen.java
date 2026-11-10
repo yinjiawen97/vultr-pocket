@@ -15,6 +15,12 @@ final class ServerScreen {
 
  static String MainActivityId(JSONObject x)throws Exception{return Manager.id(x);}
  void more(JSONObject x){a.menu(x.optString("label","服务器操作"),new String[]{"查看部署详情","重装并部署（清空磁盘）","永久删除服务器"},()->detail(x),()->reinstall(x),()->delete(x));}
- void reinstall(JSONObject x){a.confirm("reinstall","将清空："+x.optString("label")+"\n"+x.optString("main_ip")+"\n"+x.optString("id"),()->a.task("提交重装，不自动重试…",()->{JSONObject r=a.manager.reinstall(x);a.ui(()->a.showDeployment(r));}));}
+ // Step 1: pick the release to deploy on; step 2: confirm with everything that will be wiped spelled out.
+ void reinstall(JSONObject x){String os=x.optString("os"),why=Core.blocked(os);if(!why.isEmpty()){a.message(why);return;}
+  String[] labels=new String[Core.SYSTEMS.length];Runnable[] picks=new Runnable[labels.length];for(int i=0;i<labels.length;i++){String s=Core.SYSTEMS[i];labels[i]=s+(s.equals(os)?"（当前系统）":"（更换系统）");picks[i]=()->confirmReinstall(x,s);}
+  a.menu("选择要部署的系统",labels,picks);}
+ static String reinstallSummary(JSONObject x,String system,String login){String os=x.optString("os");
+  return "将清空："+x.optString("label","未命名服务器")+"\n"+x.optString("main_ip")+"\n系统："+(system.equals(os)?os+"（保持不变）":os+" → "+system)+"\n地区 / 套餐："+x.optString("region","—").toUpperCase(Locale.ROOT)+" / "+x.optString("plan","—")+"\n规格："+x.optString("vcpu_count","—")+" vCPU · "+x.optString("ram","—")+" MB 内存 · "+x.optString("disk","—")+" GB 磁盘\n实例 ID："+x.optString("id")+"\n\n部署内容：Shadowsocks 节点和订阅端点，并创建 SSH 用户 "+login+"（随机密码）。\n节点密码会更换，客户端需刷新订阅。";}
+ void confirmReinstall(JSONObject x,String system){a.confirm("reinstall",reinstallSummary(x,system,ServerLogin.deployUser(a.manager.data.optString("ssh_username"))),()->a.task("提交重装，不自动重试…",()->{JSONObject r=a.manager.reinstall(x,system);a.ui(()->a.showDeployment(r));}));}
  void delete(JSONObject x){a.confirm("delete","将永久删除："+x.optString("label")+"\n"+x.optString("main_ip")+"\n"+x.optString("id")+"\n独立 IP、快照不随之删除。",()->a.task("提交删除并核对…",()->{a.manager.delete(x);JSONArray all=a.manager.api().list("/instances","instances");a.manager.data.put("home_snapshot",safe(all,a.manager)).put("home_checked",System.currentTimeMillis());a.manager.save();a.ui(()->{a.page("服务器");a.toast("已确认目标实例删除",Notice.Kind.SUCCESS);});}));}
 }

@@ -19,5 +19,14 @@ public final class Core {
  public static String shortTime(long epochMillis){return shortTime(java.time.Instant.ofEpochMilli(epochMillis).toString());}
  public static boolean confirm(String input,String word){return input.trim().equalsIgnoreCase(word);}
  public static boolean uncertain(String phase){return phase.endsWith("pending")||phase.equals("reinstall-preparing");}
+ // Releases whose archive ships every package assets/bootstrap.sh installs; reinstall keeps the instance's current OS.
+ public static final String[] SYSTEMS={"Ubuntu 24.04 LTS x64","Ubuntu 26.04 LTS x64","Debian 12 x64 (bookworm)","Debian 13 x64 (trixie)"};
+ public static boolean deployable(String os){for(String s:SYSTEMS)if(s.equals(os))return true;return false;}
+ // Saved default system; anything unknown falls back to the first supported release.
+ public static String system(String saved){return deployable(saved)?saved:SYSTEMS[0];}
+ // Why "reinstall and deploy" is unavailable for an instance running this OS; empty when it is available.
+ public static String blocked(String os){if(deployable(os))return "";return os==null||os.trim().isEmpty()?"尚未获取系统信息，刷新服务器列表后再试。":"当前系统 "+os.trim()+" 不支持自动部署，仅支持 Ubuntu 24.04 / 26.04 LTS 和 Debian 12 / 13（x64）。";}
+ // 4xx answers that mean the cloud refused the request outright, so nothing was started.
+ public static boolean refused(int code){return code==400||code==401||code==403||code==404||code==422;}
  public static boolean inactive(String phase){return phase.equals("deleted")||phase.endsWith("rejected");}
 }

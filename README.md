@@ -16,7 +16,7 @@
 
 - **总览**：剩余可用余额（已扣除未出账费用）、服务器运行状态、Cloudflare 固定订阅健康度。
 - **服务器**：开机 / 关机（带确认与云端回读）、重装、删除；显示 SSH 登录信息与订阅直链。
-- **一键部署**：按默认地区 / 套餐 / 月费上限新建 Ubuntu 实例，cloud-init 自动安装 Shadowsocks + nginx 订阅端点；每次部署随机生成订阅 token、节点密码和 SSH 密码。
+- **一键部署**：按默认地区 / 套餐 / 月费上限新建 Ubuntu / Debian 实例，cloud-init 自动安装 Shadowsocks + nginx 订阅端点；每次部署随机生成订阅 token、节点密码和 SSH 密码。
 - **订阅**：导入 FlClash、复制给 Clash Verge、多订阅合并、节点分层检测（端口 / 代理出口）。
 - **分流模板**（`assets/config.yaml`）：国内直连、国外走代理，MRS 规则集每日更新；Claude/Anthropic 独立分组且没有直连选项，Tailscale（`*.ts.net`、`100.64.0.0/10`）直连，Apple 默认直连。
 - **费用**：完整账单按产品汇总，标出当前实例的未出账费用，本机加密缓存。
