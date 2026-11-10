@@ -24,8 +24,11 @@ public final class Core {
  public static boolean deployable(String os){for(String s:SYSTEMS)if(s.equals(os))return true;return false;}
  // Saved default system; anything unknown falls back to the first supported release.
  public static String system(String saved){return deployable(saved)?saved:SYSTEMS[0];}
- // Why "reinstall and deploy" is unavailable for an instance running this OS; empty when it is available.
- public static String blocked(String os){if(deployable(os))return "";return os==null||os.trim().isEmpty()?"尚未获取系统信息，刷新服务器列表后再试。":"当前系统 "+os.trim()+" 不支持自动部署，仅支持 Ubuntu 24.04 / 26.04 LTS 和 Debian 12 / 13（x64）。";}
+ // Why "reinstall and deploy" is unavailable for an instance; empty when it is available. Only an unknown OS blocks it:
+ // an instance on any other system can still be redeployed by switching it to one of SYSTEMS.
+ public static String blocked(String os){return os==null||os.trim().isEmpty()?"尚未获取系统信息，刷新服务器列表后再试。":"";}
+ // Shown under the button when the current OS cannot be deployed on as-is; empty otherwise.
+ public static String switchHint(String os){return os==null||os.trim().isEmpty()||deployable(os)?"":"当前系统 "+os.trim()+" 不能直接部署；点「重装并部署」可更换为 Ubuntu 24.04 / 26.04 LTS 或 Debian 12 / 13 后部署。";}
  // 4xx answers that mean the cloud refused the request outright, so nothing was started.
  public static boolean refused(int code){return code==400||code==401||code==403||code==404||code==422;}
  public static boolean inactive(String phase){return phase.equals("deleted")||phase.endsWith("rejected");}

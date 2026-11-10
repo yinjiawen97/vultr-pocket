@@ -111,7 +111,7 @@ final class Manager {
  JSONObject reinstall(JSONObject item,String system)throws Exception{
   if(existing(true)!=null)throw new IOException("有未完成请求，请先继续核对。");
   String target=id(item);JSONObject latest=api().call("GET","/instances/"+target,null).getJSONObject("instance");
-  String current=latest.optString("os");if(!Core.deployable(current))throw new IOException(Core.blocked(current));
+  String current=latest.optString("os");
   if(!Core.deployable(system))throw new IOException("不支持的系统："+system+"。");
   boolean change=!system.equals(current);int os=change?osId(system):-1; // Resolve the image before anything is written.
   JSONObject r=new JSONObject().put("id",target).put("label",latest.optString("label")).put("password",hex()).put("token",subToken()).put("phase","reinstall-preparing").put("requested_at",now()).put("mode","reinstall");remember(r,latest);String script=bootstrap(r);records().put(r);save();
