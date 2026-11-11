@@ -101,6 +101,19 @@ final class Manager {
   }catch(IOException e){r.put("note","订阅未就绪或手机网络不可达；稍后继续检查。不能据此判断 IP 被封。");}
   save();return r;
  }
+ // Pick up a server deployed elsewhere (the Mac tool, or this app before its data was lost): read the subscription
+ // credentials back from the instance's startup script, and only keep them once the subscription really answers.
+ JSONObject adopt(JSONObject item)throws Exception{
+  String target=id(item);JSONObject known=managed(target);if(known!=null&&!known.optString("token").isEmpty())throw new IOException("这台服务器已有本机订阅信息。");
+  JSONObject latest=api().call("GET","/instances/"+target,null).getJSONObject("instance");String ip=latest.optString("main_ip");
+  if(!ip.matches("[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+")||ip.equals("0.0.0.0"))throw new IOException("服务器还没有公网 IP，稍后再试。");
+  JSONObject wrapper=api().call("GET","/instances/"+target+"/user-data",null).optJSONObject("user_data");String[] found=Adoption.credentials(wrapper==null?"":wrapper.optString("data"));
+  String url="http://"+ip+"/sub/"+found[1],body;
+  try{body=Api.subscription(url);}catch(IOException e){throw new IOException("已找到订阅信息，但订阅地址打不开：服务器可能还在安装、部署后被改动过，或手机当前网络到不了这个 IP。未保存。");}
+  if(!Adoption.matches(body,found[0],ip))throw new IOException("订阅地址返回的内容与这台服务器的部署信息不符，未保存。");
+  JSONObject r=new JSONObject().put("id",target).put("label",latest.optString("label")).put("password",found[0]).put("token",found[1]).put("phase","subscription-ready").put("mode","adopted").put("requested_at",now()).put("ready_verified_at",now()).put("url",url).put("verification_config",body.replace(ip,"REPLACE_SERVER_IP"));
+  synchronized(this){remember(r,latest);records().put(r);save();new Book(this).sync();}return r;
+ }
  JSONObject managed(String instanceId)throws Exception{for(int i=records().length()-1;i>=0;i--){JSONObject r=records().getJSONObject(i);if(r.optString("id").equals(instanceId)&&!Core.inactive(r.optString("phase")))return r;}return null;}
  void delete(JSONObject instance)throws Exception{
   String target=id(instance);api().call("DELETE","/instances/"+target,null);

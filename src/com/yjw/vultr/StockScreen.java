@@ -25,7 +25,7 @@ final class StockScreen {
   budget=a.field(c,"基础月费上限（美元）",m.data.optString("cap","5"),false);budget.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
   onlyStock=toggle(c,"只显示当前有库存的套餐",true);onlyBudget=toggle(c,"只显示月费上限内的套餐",false);another=toggle(c,"另建一台（保留原服务器并额外计费）",false);
   a.button(c,"查询实时库存",MainActivity.Tone.PRIMARY,()->query());
-  a.helpCard("库存说明","只显示适合 Ubuntu 24.04 / 26.04、Debian 12 / 13 自动部署的按需云服务器（IPv4、至少 1 GB 内存），不含 GPU、裸金属或抢占式套餐。\nVultr 提供可部署套餐清单，不提供剩余台数；库存与价格都可能变化，创建前会再次核验。税费及超额流量另计。");
+  a.helpCard("库存说明","只显示适合 Ubuntu / Debian 自动部署的按需云服务器（IPv4、至少 1 GB 内存），不含 GPU、裸金属或抢占式套餐。\nVultr 提供可部署套餐清单，不提供剩余台数；库存与价格都可能变化，创建前会再次核验。税费及超额流量另计。");
   results=new LinearLayout(a);results.setOrientation(1);a.body.addView(results);
   AdapterView.OnItemSelectedListener clear=new AdapterView.OnItemSelectedListener(){public void onItemSelected(AdapterView<?> p,View v,int pos,long id){invalidate();}public void onNothingSelected(AdapterView<?> p){invalidate();}};
   region.setOnItemSelectedListener(clear);family.setOnItemSelectedListener(clear);onlyStock.setOnCheckedChangeListener((b,v)->invalidate());onlyBudget.setOnCheckedChangeListener((b,v)->invalidate());
