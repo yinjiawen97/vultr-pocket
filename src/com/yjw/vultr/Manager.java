@@ -60,8 +60,10 @@ final class Manager {
    public void clear(String id)throws Exception{JSONObject all=data.optJSONObject("power_pending");if(all==null)return;Object previous=all.remove(id);try{save();}catch(Exception e){if(previous!=null)all.put(id,previous);throw e;}}
   });
  }
- JSONObject plan()throws Exception{return plan(data.optString("region","sjc"),data.optString("plan","vc2-1c-1gb"),data.optString("cap","5"));}
- JSONObject plan(String region,String plan,String cap)throws Exception{
+ JSONObject plan()throws Exception{return plan(data.optString("region","sjc"),data.optString("plan","vc2-1c-1gb"),data.optString("cap","5"),Core.system(data.optString("system")));}
+ int osId(String system)throws Exception{JSONArray systems=api().list("/os","os");for(int i=0;i<systems.length();i++){JSONObject s=systems.getJSONObject(i);if(s.optString("name").equals(system)&&s.optString("arch").equals("x64"))return s.getInt("id");}throw new IOException("Vultr 当前不提供 "+system+"，未提交。");}
+ JSONObject plan(String region,String plan,String cap,String system)throws Exception{
+  if(!Core.deployable(system))throw new IOException("不支持的系统："+system+"。");
   if(!region.matches("[a-z]{3}"))throw new IOException("地区应为 sjc 等三位小写字母。");
   JSONArray plans=api().list("/plans","plans");JSONObject chosen=null;
   for(int i=0;i<plans.length();i++)if(plans.getJSONObject(i).getString("id").equals(plan))chosen=plans.getJSONObject(i);
@@ -71,19 +73,17 @@ final class Manager {
   if(!Core.budget(Inventory.price(chosen,region),cap))throw new IOException("套餐月费超过 $"+cap+" 上限，未创建。");
   JSONArray stock=api().call("GET","/regions/"+region+"/availability",null).getJSONArray("available_plans");boolean available=false;for(int i=0;i<stock.length();i++)available|=stock.getString(i).equals(plan);
   if(!available)throw new IOException("该地区当前没有此套餐库存，未创建。");
-  JSONArray systems=api().list("/os","os");int os=-1;for(int i=0;i<systems.length();i++){JSONObject s=systems.getJSONObject(i);if(s.optString("name").equals("Ubuntu 24.04 LTS x64")&&s.optString("arch").equals("x64"))os=s.getInt("id");}
-  if(os<0)throw new IOException("找不到 Ubuntu 24.04 x64，未创建。");
-  return new JSONObject().put("region",region).put("plan",plan).put("os_id",os).put("price",Inventory.price(chosen,region).toPlainString()).put("cap",cap);
+  return new JSONObject().put("region",region).put("plan",plan).put("os_id",osId(system)).put("os",system).put("price",Inventory.price(chosen,region).toPlainString()).put("cap",cap);
  }
  JSONObject create(JSONObject confirmed)throws Exception{
   if(existing(true)!=null)throw new IOException("已有结果不确定的请求，请先继续核对。");
-  JSONObject fresh=plan(confirmed.getString("region"),confirmed.getString("plan"),confirmed.getString("cap"));if(!fresh.toString().equals(confirmed.toString()))throw new IOException("方案或价格已变化，请重新预览确认。");
+  JSONObject fresh=plan(confirmed.getString("region"),confirmed.getString("plan"),confirmed.getString("cap"),confirmed.getString("os"));if(!fresh.toString().equals(confirmed.toString()))throw new IOException("方案或价格已变化，请重新预览确认。");
   String tag="vp-"+UUID.randomUUID().toString();JSONObject r=new JSONObject().put("tag",tag).put("label","clash-"+fresh.getString("region")+"-"+System.currentTimeMillis()).put("password",hex()).put("token",subToken()).put("phase","create-pending").put("requested_at",now()).put("mode","new");
   String script=bootstrap(r);
   records().put(r);save(); // Durable marker BEFORE the only POST; never replay an uncertain request.
   JSONObject payload=new JSONObject().put("region",fresh.getString("region")).put("plan",fresh.getString("plan")).put("os_id",fresh.getInt("os_id")).put("label",r.getString("label")).put("hostname","clash-node").put("tags",new JSONArray().put(tag)).put("backups","disabled").put("enable_ipv6",false).put("disable_public_ipv4",false).put("activation_email",false).put("ddos_protection",false).put("user_data",script);
   try{JSONObject item=api().call("POST","/instances",payload).getJSONObject("instance");r.put("id",id(item)).put("phase","created");remember(r,item);save();return r;}
-  catch(Api.Error e){if(e.code==400||e.code==401||e.code==403||e.code==404||e.code==422){r.put("phase","create-rejected");save();}throw e;}
+  catch(Api.Error e){if(Core.refused(e.code)){r.put("phase","create-rejected");save();}throw e;}
  }
  JSONObject check(JSONObject r)throws Exception{
   if(r.optString("id").isEmpty()){
@@ -101,18 +101,36 @@ final class Manager {
   }catch(IOException e){r.put("note","订阅未就绪或手机网络不可达；稍后继续检查。不能据此判断 IP 被封。");}
   save();return r;
  }
+ // Pick up a server deployed elsewhere (the Mac tool, or this app before its data was lost): read the subscription
+ // credentials back from the instance's startup script, and only keep them once the subscription really answers.
+ JSONObject adopt(JSONObject item)throws Exception{
+  String target=id(item);JSONObject known=managed(target);if(known!=null&&!known.optString("token").isEmpty())throw new IOException("这台服务器已有本机订阅信息。");
+  JSONObject latest=api().call("GET","/instances/"+target,null).getJSONObject("instance");String ip=latest.optString("main_ip");
+  if(!ip.matches("[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+")||ip.equals("0.0.0.0"))throw new IOException("服务器还没有公网 IP，稍后再试。");
+  JSONObject wrapper=api().call("GET","/instances/"+target+"/user-data",null).optJSONObject("user_data");String[] found=Adoption.credentials(wrapper==null?"":wrapper.optString("data"));
+  String url="http://"+ip+"/sub/"+found[1],body;
+  try{body=Api.subscription(url);}catch(IOException e){throw new IOException("已找到订阅信息，但订阅地址打不开：服务器可能还在安装、部署后被改动过，或手机当前网络到不了这个 IP。未保存。");}
+  if(!Adoption.matches(body,found[0],ip))throw new IOException("订阅地址返回的内容与这台服务器的部署信息不符，未保存。");
+  JSONObject r=new JSONObject().put("id",target).put("label",latest.optString("label")).put("password",found[0]).put("token",found[1]).put("phase","subscription-ready").put("mode","adopted").put("requested_at",now()).put("ready_verified_at",now()).put("url",url).put("verification_config",body.replace(ip,"REPLACE_SERVER_IP"));
+  synchronized(this){remember(r,latest);records().put(r);save();new Book(this).sync();}return r;
+ }
  JSONObject managed(String instanceId)throws Exception{for(int i=records().length()-1;i>=0;i--){JSONObject r=records().getJSONObject(i);if(r.optString("id").equals(instanceId)&&!Core.inactive(r.optString("phase")))return r;}return null;}
  void delete(JSONObject instance)throws Exception{
   String target=id(instance);api().call("DELETE","/instances/"+target,null);
   try{api().call("GET","/instances/"+target,null);throw new IOException("删除已提交，尚未确认。请刷新列表核对，未确认前仍可能计费。");}catch(Api.Error e){if(e.code!=404)throw e;}
   for(int i=0;i<records().length();i++){JSONObject r=records().getJSONObject(i);if(r.optString("id").equals(target))r.put("phase","deleted");}ServerLogin.forget(data,target);save();
  }
- JSONObject reinstall(JSONObject item)throws Exception{
+ // system: the release to deploy on. The instance's current release is a plain reinstall; a different one changes the OS, which also wipes the disk.
+ JSONObject reinstall(JSONObject item,String system)throws Exception{
   if(existing(true)!=null)throw new IOException("有未完成请求，请先继续核对。");
   String target=id(item);JSONObject latest=api().call("GET","/instances/"+target,null).getJSONObject("instance");
-  if(!latest.optString("os").equals("Ubuntu 24.04 LTS x64"))throw new IOException("手机版仅支持重装 Ubuntu 24.04 LTS x64 实例。");
+  String current=latest.optString("os");
+  if(!Core.deployable(system))throw new IOException("不支持的系统："+system+"。");
+  boolean change=!system.equals(current);int os=change?osId(system):-1; // Resolve the image before anything is written.
   JSONObject r=new JSONObject().put("id",target).put("label",latest.optString("label")).put("password",hex()).put("token",subToken()).put("phase","reinstall-preparing").put("requested_at",now()).put("mode","reinstall");remember(r,latest);String script=bootstrap(r);records().put(r);save();
   api().call("PATCH","/instances/"+target,new JSONObject().put("user_data",script));r.put("phase","reinstall-pending");save();
-  api().call("POST","/instances/"+target+"/reinstall",new JSONObject().put("hostname","clash-node"));r.put("phase","created");r.remove("checked_at");ServerLogin.forget(data,target);save();return r;
+  try{if(change)api().call("PATCH","/instances/"+target,new JSONObject().put("os_id",os));else api().call("POST","/instances/"+target+"/reinstall",new JSONObject().put("hostname","clash-node"));}
+  catch(Api.Error e){if(Core.refused(e.code)){r.put("phase","reinstall-rejected");save();}throw e;}
+  r.put("phase","created");r.remove("checked_at");ServerLogin.forget(data,target);save();return r;
  }
 }

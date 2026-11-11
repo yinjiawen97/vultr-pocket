@@ -7,7 +7,7 @@ import java.text.SimpleDateFormat;
 import org.json.*;
 final class StockScreen {
  final MainActivity a; final Manager m;
- JSONArray regions;Spinner region,family;EditText budget;CheckBox onlyStock,onlyBudget,another;LinearLayout results;int generation=0;
+ JSONArray regions;Spinner region,family,system;EditText budget;CheckBox onlyStock,onlyBudget,another;LinearLayout results;int generation=0;
  final String[] types={"vc2","vhf","vhp","voc","vx1"};
  StockScreen(MainActivity a){this.a=a;m=a.manager;}
  void open(){a.enterDetail("库存与方案","服务器",()->loadRegions());}
@@ -21,10 +21,11 @@ final class StockScreen {
   if(names.isEmpty()){c.addView(a.label("没有返回可用地区，请稍后重试。",14,a.MUTED));return;}
   c.addView(a.label("1  选择地区",13,a.MUTED));region=spinner(c,names);region.setSelection(selected);
   c.addView(a.label("2  选择服务器系列",13,a.MUTED));family=spinner(c,Arrays.asList("经济型 Cloud Compute · vc2","高频计算 · vhf","高性能计算 · vhp","优化型计算 · voc","通用计算 · vx1"));
+  c.addView(a.label("3  选择系统",13,a.MUTED));system=spinner(c,Arrays.asList(Core.SYSTEMS));system.setSelection(Arrays.asList(Core.SYSTEMS).indexOf(Core.system(m.data.optString("system"))));
   budget=a.field(c,"基础月费上限（美元）",m.data.optString("cap","5"),false);budget.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
   onlyStock=toggle(c,"只显示当前有库存的套餐",true);onlyBudget=toggle(c,"只显示月费上限内的套餐",false);another=toggle(c,"另建一台（保留原服务器并额外计费）",false);
   a.button(c,"查询实时库存",MainActivity.Tone.PRIMARY,()->query());
-  a.helpCard("库存说明","只显示适合当前 Ubuntu 24.04 自动部署的按需云服务器（IPv4、至少 1 GB 内存），不含 GPU、裸金属或抢占式套餐。\nVultr 提供可部署套餐清单，不提供剩余台数；库存与价格都可能变化，创建前会再次核验。税费及超额流量另计。");
+  a.helpCard("库存说明","只显示适合 Ubuntu / Debian 自动部署的按需云服务器（IPv4、至少 1 GB 内存），不含 GPU、裸金属或抢占式套餐。\nVultr 提供可部署套餐清单，不提供剩余台数；库存与价格都可能变化，创建前会再次核验。税费及超额流量另计。");
   results=new LinearLayout(a);results.setOrientation(1);a.body.addView(results);
   AdapterView.OnItemSelectedListener clear=new AdapterView.OnItemSelectedListener(){public void onItemSelected(AdapterView<?> p,View v,int pos,long id){invalidate();}public void onNothingSelected(AdapterView<?> p){invalidate();}};
   region.setOnItemSelectedListener(clear);family.setOnItemSelectedListener(clear);onlyStock.setOnCheckedChangeListener((b,v)->invalidate());onlyBudget.setOnCheckedChangeListener((b,v)->invalidate());
@@ -53,9 +54,10 @@ final class StockScreen {
  }catch(Exception e){a.message("请输入有效的月费上限和地区。");}}
  void choose(String rid,String title,JSONObject item,String cap,boolean extra,int ticket){
   if(ticket!=generation){a.message("条件已变化，请重新查询库存。");return;}
+  final String os=Core.SYSTEMS[system.getSelectedItemPosition()];
   a.task("核验所选套餐…",()->{JSONObject existing=m.existing(extra);if(existing!=null){a.ui(()->{a.showDeployment(existing);a.message("已有部署或待核对请求。若要额外创建，请返回库存页勾选“另建一台”；不确定请求必须先核对。");});return;}
-   JSONObject selected=m.plan(rid,item.getString("id"),cap);
-   a.ui(()->{if(ticket!=generation)return;a.confirm("create",title+"\n"+selected.getString("plan")+"\n"+Inventory.specs(item)+"\nUbuntu 24.04 LTS x64\n基础月费 "+Core.cash(Core.money(selected.get("price")))+"，上限 $"+cap+"。\n税费、超额流量另计，自动备份关闭。"+(extra?"\n额外新建，原实例保留并计费。":"\n新建并自动部署节点。"),()->a.task("再次核验库存后创建…",()->{if(!extra){JSONObject current=m.existing(false);if(current!=null){a.ui(()->a.showDeployment(current));return;}}JSONObject r=m.create(selected);a.ui(()->a.showDeployment(r));}));});
+   JSONObject selected=m.plan(rid,item.getString("id"),cap,os);
+   a.ui(()->{if(ticket!=generation)return;a.confirm("create",title+"\n"+selected.getString("plan")+"\n"+Inventory.specs(item)+"\n"+selected.getString("os")+"\n基础月费 "+Core.cash(Core.money(selected.get("price")))+"，上限 $"+cap+"。\n税费、超额流量另计，自动备份关闭。"+(extra?"\n额外新建，原实例保留并计费。":"\n新建并自动部署节点。"),()->a.task("再次核验库存后创建…",()->{if(!extra){JSONObject current=m.existing(false);if(current!=null){a.ui(()->a.showDeployment(current));return;}}JSONObject r=m.create(selected);a.ui(()->a.showDeployment(r));}));});
   });
  }
 }
